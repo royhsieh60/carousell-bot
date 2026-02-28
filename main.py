@@ -56,7 +56,7 @@ def check_carousell(is_first_run=False):
     url = f"https://tw.carousell.com/search/?price_end=0&price_start=0&sort_by=3&_t={int(time.time())}" 
     
     try:
-        response = requests.get(url, impersonate="chrome120", timeout=15)
+        response = requests.get(url, impersonate="chrome110", timeout=15)
         soup = BeautifulSoup(response.text, "html.parser")
         cards = soup.find_all("a", href=True)
         
@@ -100,4 +100,5 @@ if __name__ == "__main__":
     # 同時執行「監測排程」與「網頁伺服器」
     t = threading.Thread(target=run_scheduler)
     t.start()
+
     run_web_server()
