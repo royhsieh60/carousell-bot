@@ -56,7 +56,13 @@ def check_carousell(is_first_run=False):
     url = f"https://tw.carousell.com/search/?price_end=0&price_start=0&sort_by=3&_t={int(time.time())}" 
     
     try:
+        # 使用 chrome110 確保相容性不報錯
         response = requests.get(url, impersonate="chrome110", timeout=15)
+        
+        # 🔥 最關鍵的除錯行：印出伺服器真實反應
+        if not is_first_run:
+            print(f"   [除錯] 旋轉拍賣回傳狀態碼: {response.status_code}")
+            
         soup = BeautifulSoup(response.text, "html.parser")
         cards = soup.find_all("a", href=True)
         
@@ -75,7 +81,10 @@ def check_carousell(is_first_run=False):
                     seen_items.add(item_id)
                     save_seen(seen_items)
                     
-                    if is_spam(full_text): continue
+                    if is_spam(full_text): 
+                        if not is_first_run:
+                            print(f"   🚫 [垃圾過濾] 攔截到假免費: {item_title}")
+                        continue
                     
                     if not is_first_run:
                         clean_url = "https://tw.carousell.com" + clean_path
@@ -85,6 +94,7 @@ def check_carousell(is_first_run=False):
                             print(f"✅ 成功推播: {item_title}")
                         except Exception as e:
                             print(f"❌ 推播失敗: {e}")
+                            
     except Exception as e:
         print(f"❌ 錯誤: {e}")
 
@@ -97,8 +107,6 @@ def run_scheduler():
         time.sleep(1)
 
 if __name__ == "__main__":
-    # 同時執行「監測排程」與「網頁伺服器」
     t = threading.Thread(target=run_scheduler)
     t.start()
-
     run_web_server()
