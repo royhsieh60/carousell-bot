@@ -17,7 +17,6 @@ line_bot_api = LineBotApi(LINE_TOKEN)
 
 RECORD_FILE = "carousell_seen.json"
 
-# --- 建立假網頁來騙雲端主機我們活著 ---
 app = Flask(__name__)
 @app.route('/')
 def home():
@@ -26,7 +25,6 @@ def home():
 def run_web_server():
     port = int(os.environ.get('PORT', 10000))
     app.run(host='0.0.0.0', port=port)
-# -----------------------------------
 
 def load_seen():
     if os.path.exists(RECORD_FILE):
@@ -51,17 +49,16 @@ def is_spam(text):
 
 def check_carousell(is_first_run=False):
     if not is_first_run:
-        print(f"\n[{time.strftime('%H:%M:%S')}] 掃描中...")
+        print(f"\n[{time.strftime('%H:%M:%S')}] 準備發送請求...", flush=True)
         
     url = f"https://tw.carousell.com/search/?price_end=0&price_start=0&sort_by=3&_t={int(time.time())}" 
     
     try:
-        # 使用 chrome110 確保相容性不報錯
         response = requests.get(url, impersonate="chrome110", timeout=15)
         
-        # 🔥 最關鍵的除錯行：印出伺服器真實反應
+        # 🔥 強制瞬間印出狀態碼
         if not is_first_run:
-            print(f"   [除錯] 旋轉拍賣回傳狀態碼: {response.status_code}")
+            print(f"   [除錯] 旋轉拍賣回傳狀態碼: {response.status_code}", flush=True)
             
         soup = BeautifulSoup(response.text, "html.parser")
         cards = soup.find_all("a", href=True)
@@ -83,7 +80,7 @@ def check_carousell(is_first_run=False):
                     
                     if is_spam(full_text): 
                         if not is_first_run:
-                            print(f"   🚫 [垃圾過濾] 攔截到假免費: {item_title}")
+                            print(f"   🚫 [垃圾過濾] 攔截到假免費: {item_title}", flush=True)
                         continue
                     
                     if not is_first_run:
@@ -91,16 +88,17 @@ def check_carousell(is_first_run=False):
                         msg = f"{item_title}\n{clean_url}"
                         try:
                             line_bot_api.push_message(USER_ID, TextSendMessage(text=msg))
-                            print(f"✅ 成功推播: {item_title}")
+                            print(f"✅ 成功推播: {item_title}", flush=True)
                         except Exception as e:
-                            print(f"❌ 推播失敗: {e}")
+                            print(f"❌ 推播失敗: {e}", flush=True)
                             
     except Exception as e:
-        print(f"❌ 錯誤: {e}")
+        print(f"❌ 錯誤: {e}", flush=True)
 
 def run_scheduler():
-    print("⚙️ 雲端系統啟動中：建立防重複清單...")
+    print("⚙️ 雲端系統啟動中：建立防重複清單...", flush=True)
     check_carousell(is_first_run=True)
+    print("✅ 清單建立完成，進入每分鐘自動監測模式...", flush=True)
     schedule.every(1).minutes.do(lambda: check_carousell(is_first_run=False))
     while True:
         schedule.run_pending()
